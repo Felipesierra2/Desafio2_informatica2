@@ -34,5 +34,4 @@ public:
     bool quitarLike(Usuario* usuario);
     void mostrar() const;
 };
-
 #endif // FOTO_H
