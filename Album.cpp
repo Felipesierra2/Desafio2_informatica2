@@ -91,8 +91,7 @@ Foto* Album::getFoto(int indice) const
 }
 
 bool Album::puedeVer(const Usuario* propietario,
-                     const Usuario* visitante) const
-{
+                     const Usuario* visitante) const{
     if (propietario == nullptr || visitante == nullptr) {
         return false;
     }

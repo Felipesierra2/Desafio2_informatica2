@@ -5,7 +5,8 @@
 #include <limits>
 
 UdeABook::UdeABook(RedSocial& redSocial)
-    : redSocial(redSocial)
+    : redSocial(redSocial),
+    actualizacionFotosRealizada(false)
 {
 }
 
@@ -13,9 +14,19 @@ void UdeABook::ejecutar()
 {
     std::string apodo;
 
-    std::cout << "\n=== BIENVENIDO A UdeA@Book ===\n";
+    std::cout << "\n================================\n";
+    std::cout << "     BIENVENIDO A UdeA@Book\n";
+    std::cout << "================================\n";
     std::cout << "Ingresa tu apodo: ";
-    std::cin >> apodo;
+
+    if (!(std::cin >> apodo))
+    {
+        std::cin.clear();
+        std::cin.ignore(
+            std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Entrada invalida.\n";
+        return;
+    }
 
     Usuario* usuario = redSocial.iniciarSesion(apodo);
 
@@ -56,35 +67,43 @@ void UdeABook::menuUsuario(Usuario* usuario)
         std::cout << "\n--- Mensajes ---\n";
         std::cout << "10. Enviar mensaje\n";
         std::cout << "11. Mostrar mensajes recibidos\n";
-        std::cout << "12. Mostrar mensajes no leidos por fecha\n";
+        std::cout << "12. Mostrar mensajes no leidos ordenados\n";
         std::cout << "13. Buscar mensajes por fechas\n";
 
         std::cout << "\n0. Cerrar sesion\n";
-        std::cout << "Selecciona una opcion: ";
+        std::cout << "Opcion: ";
 
         if (!(std::cin >> opcion))
         {
             std::cin.clear();
             std::cin.ignore(
                 std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Entrada invalida.\n";
-            opcion = -1;
+            std::cout << "Debes ingresar una opcion numerica.\n";
             continue;
         }
 
         std::string apodo;
         std::string nombreAlbum;
-        std::string fechaInicio;
-        std::string fechaFin;
         std::string contenido;
         std::string fechaMensaje;
+        std::string fechaInicio;
+        std::string fechaFin;
         int k;
         int indice;
+        bool resultado;
 
         switch (opcion)
         {
         case 1:
-            redSocial.mostrarFotosAleatoriasAmigos(usuario);
+            if (!actualizacionFotosRealizada)
+            {
+                redSocial.mostrarFotosAleatoriasAmigos(usuario);
+                actualizacionFotosRealizada = true;
+            }
+            else
+            {
+                std::cout << "Ya actualizaste las fotos una vez en esta sesion.\n";
+            }
             break;
 
         case 2:
@@ -95,17 +114,24 @@ void UdeABook::menuUsuario(Usuario* usuario)
             std::cout << "Apodo de la persona: ";
             std::cin >> apodo;
 
-            if (!redSocial.enviarSolicitud(
-                    usuario, redSocial.buscarUsuario(apodo)))
-            {
+            resultado = redSocial.enviarSolicitud(
+                usuario, redSocial.buscarUsuario(apodo));
+
+            if (!resultado)
                 std::cout << "No se pudo enviar la solicitud.\n";
-            }
             break;
 
         case 4:
             std::cout << "Cantidad de sugerencias (1-20): ";
-            std::cin >> k;
-            redSocial.mostrarSugerenciasAmistad(usuario, k);
+            if (std::cin >> k)
+                redSocial.mostrarSugerenciasAmistad(usuario, k);
+            else
+            {
+                std::cin.clear();
+                std::cin.ignore(
+                    std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Cantidad invalida.\n";
+            }
             break;
 
         case 5:
@@ -133,15 +159,20 @@ void UdeABook::menuUsuario(Usuario* usuario)
 
         case 8:
         case 9:
-        {
             std::cout << "Apodo del propietario: ";
             std::cin >> apodo;
             std::cout << "Nombre del album: ";
             std::getline(std::cin >> std::ws, nombreAlbum);
             std::cout << "Indice de la foto: ";
-            std::cin >> indice;
 
-            bool resultado;
+            if (!(std::cin >> indice))
+            {
+                std::cin.clear();
+                std::cin.ignore(
+                    std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Indice invalido.\n";
+                break;
+            }
 
             if (opcion == 8)
             {
@@ -157,11 +188,8 @@ void UdeABook::menuUsuario(Usuario* usuario)
             }
 
             if (!resultado)
-            {
-                std::cout << "No se pudo realizar la operacion.\n";
-            }
+                std::cout << "No se pudo completar la operacion.\n";
             break;
-        }
 
         case 10:
             std::cout << "Apodo del destinatario: ";
@@ -173,18 +201,14 @@ void UdeABook::menuUsuario(Usuario* usuario)
             std::cout << "Fecha (AAAA-MM-DD): ";
             std::cin >> fechaMensaje;
 
-            if (redSocial.enviarMensaje(
-                    usuario,
-                    redSocial.buscarUsuario(apodo),
-                    contenido,
-                    fechaMensaje))
-            {
-                std::cout << "Mensaje enviado correctamente.\n";
-            }
-            else
-            {
+            resultado = redSocial.enviarMensaje(
+                usuario,
+                redSocial.buscarUsuario(apodo),
+                contenido,
+                fechaMensaje);
+
+            if (!resultado)
                 std::cout << "No se pudo enviar el mensaje.\n";
-            }
             break;
 
         case 11:
@@ -210,7 +234,7 @@ void UdeABook::menuUsuario(Usuario* usuario)
             break;
 
         default:
-            std::cout << "Opcion invalida.\n";
+            std::cout << "Opcion inexistente.\n";
             break;
         }
     }

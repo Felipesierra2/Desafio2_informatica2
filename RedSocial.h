@@ -34,6 +34,7 @@ private:
 public:
     RedSocial();
     ~RedSocial();
+
     Usuario* buscarUsuario(const std::string& apodo) const;
     bool registrarUsuario(Usuario* usuario);
     bool enviarMensaje(Usuario* remitente,Usuario* destinatario,const std::string& contenido,
@@ -75,9 +76,13 @@ public:
     void mostrarSolicitudesPendientes(Usuario* usuario) const;
     void gestionarSolicitudesPendientes(Usuario* usuario);
     int getCantidadUsuarios() const;
+    Usuario* getUsuario(int indice) const;
 
     Usuario* iniciarSesion(const std::string& apodo) const;
     void mostrarFotosAleatoriasAmigos(Usuario* usuario);
+
+    int getCantidadSolicitudes() const;
+    Solicitud* getSolicitud(int indice) const;
 
 };
 

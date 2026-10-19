@@ -16,6 +16,7 @@ add_executable(Desafio_2 main.cpp
     .gitignore
     RedSocial.h RedSocial.cpp
     MedidorRecursos.h MedidorRecursos.cpp
+    Archivo.h Archivo.cpp
 
 )
 

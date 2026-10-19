@@ -9,6 +9,8 @@ private:
 
     void menuUsuario(Usuario* usuario);
 
+    bool actualizacionFotosRealizada;
+
 public:
     UdeABook(RedSocial& redSocial);
     void ejecutar();

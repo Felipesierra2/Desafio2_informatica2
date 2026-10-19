@@ -42,6 +42,16 @@ int Foto::getCantidadLikes() const
     return cantidadLikes;
 }
 
+Usuario* Foto::getUsuarioLike(int indice) const
+{
+    if (indice < 0 || indice >= cantidadLikes)
+    {
+        return nullptr;
+    }
+
+    return usuariosQueDieronLike[indice];
+}
+
 bool Foto::darLike(Usuario* usuario)
 {
     MedidorRecursos::registrarIteracion();

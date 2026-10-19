@@ -23,6 +23,7 @@ Makefile
 *.out
 *.app
 datasetDesarrollo/
+datasset/
 
 
 # OS

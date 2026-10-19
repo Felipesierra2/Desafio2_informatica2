@@ -75,6 +75,14 @@ int RedSocial::getCantidadUsuarios() const
     return cantidadUsuarios;
 }
 
+Usuario* RedSocial::getUsuario(int indice) const
+{
+    if (indice < 0 || indice >= cantidadUsuarios)
+        return nullptr;
+
+    return usuarios[indice];
+}
+
 RedSocial::~RedSocial()
 {
     for (int i = 0; i < cantidadMensajes; ++i)
@@ -1615,126 +1623,25 @@ Usuario* RedSocial::iniciarSesion(const std::string& apodo) const
 }
 
 
+
 void RedSocial::mostrarFotosAleatoriasAmigos(Usuario* usuario)
 {
     MedidorRecursos::iniciarMedicion();
-    MedidorRecursos::registrarMemoria(sizeof(usuario));
 
-    if (usuario == nullptr ||
-        buscarUsuario(usuario->getApodo()) != usuario)
+    if (usuario == nullptr)
     {
-        std::cout << "Usuario invalido o no registrado.\n";
+        std::cout << "Usuario invalido.\n";
         MedidorRecursos::mostrarReporte();
         return;
     }
 
-    int maxFotos = 0;
+    int cantidadAmigos = usuario->getCantidadAmigos();
 
-    for (int i = 0; i < usuario->getCantidadAmigos(); i++)
+    if (cantidadAmigos == 0)
     {
-        MedidorRecursos::registrarIteracion();
-
-        Usuario* amigo = usuario->getAmigo(i);
-
-        if (amigo == nullptr)
-        {
-            continue;
-        }
-
-        for (int j = 0; j < amigo->getCantidadAlbumes(); j++)
-        {
-            MedidorRecursos::registrarIteracion();
-
-            Album* album = amigo->getAlbum(j);
-
-            if (album != nullptr &&
-                album->puedeVer(amigo, usuario))
-            {
-                maxFotos += album->getCantidadFotos();
-            }
-        }
-    }
-
-    if (maxFotos == 0)
-    {
-        std::cout << "Tus amigos no tienen fotos visibles.\n";
+        std::cout << "No tienes amigos registrados.\n";
         MedidorRecursos::mostrarReporte();
         return;
-    }
-
-
-    Foto** candidatos = new Foto*[maxFotos];
-    int* prioridades = new int[maxFotos];
-    std::string* rutas = new std::string[maxFotos];
-
-    MedidorRecursos::registrarMemoria(
-        maxFotos * (sizeof(Foto*) + sizeof(int) + sizeof(std::string))
-        );
-
-    int cantidad = 0;
-
-    for (int i = 0; i < usuario->getCantidadAmigos(); i++)
-    {
-        MedidorRecursos::registrarIteracion();
-
-        Usuario* amigo = usuario->getAmigo(i);
-
-        if (amigo == nullptr)
-        {
-            continue;
-        }
-
-        int prioridad = contarAmigosEnComun(usuario, amigo);
-
-        for (int j = 0; j < amigo->getCantidadAlbumes(); j++)
-        {
-            MedidorRecursos::registrarIteracion();
-
-            Album* album = amigo->getAlbum(j);
-
-            if (album == nullptr || !album->puedeVer(amigo, usuario))
-            {
-                continue;
-            }
-
-            for (int k = 0; k < album->getCantidadFotos(); k++)
-            {
-                MedidorRecursos::registrarIteracion();
-
-                Foto* foto = album->getFoto(k);
-
-                if (foto != nullptr && cantidad < maxFotos)
-                {
-                    candidatos[cantidad] = foto;
-                    prioridades[cantidad] = prioridad;
-                    rutas[cantidad] = foto->getRuta();
-                    cantidad++;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < cantidad - 1; i++)
-    {
-        for (int j = 0; j < cantidad - 1 - i; j++)
-        {
-            MedidorRecursos::registrarIteracion();
-
-            if (prioridades[j] < prioridades[j + 1])
-            {
-                int prioridadAux = prioridades[j];
-                prioridades[j] = prioridades[j + 1];
-                prioridades[j + 1] = prioridadAux;
-
-                Foto* fotoAux = candidatos[j];
-                candidatos[j] = candidatos[j + 1];
-                candidatos[j + 1] = fotoAux;
-
-                std::string rutaAux = rutas[j];
-                rutas[j] = rutas[j + 1];
-                rutas[j + 1] = rutaAux;
-            }
-        }
     }
 
     static bool semillaInicializada = false;
@@ -1745,85 +1652,180 @@ void RedSocial::mostrarFotosAleatoriasAmigos(Usuario* usuario)
         semillaInicializada = true;
     }
 
-    int inicio = 0;
+    Usuario** candidatos = new Usuario*[cantidadAmigos];
+    int* pesos = new int[cantidadAmigos];
 
-    while (inicio < cantidad)
+    MedidorRecursos::registrarMemoria(
+        sizeof(Usuario*) * cantidadAmigos +
+        sizeof(int) * cantidadAmigos);
+
+    int cantidadCandidatos = 0;
+
+    for (int i = 0; i < cantidadAmigos; i++)
     {
-        int fin = inicio + 1;
+        MedidorRecursos::registrarIteracion();
 
-        while (fin < cantidad &&
-               prioridades[fin] == prioridades[inicio])
+        Usuario* amigo = usuario->getAmigo(i);
+
+        if (amigo == nullptr || amigo->getFotoDePerfil().empty())
         {
-            fin++;
+            continue;
         }
 
-        for (int i = fin - 1; i > inicio; i--)
+        const std::string& ruta = amigo->getFotoDePerfil();
+
+        bool rutaRepetida = false;
+
+        for (int j = 0; j < cantidadCandidatos; j++)
         {
             MedidorRecursos::registrarIteracion();
 
-            int j = inicio + std::rand() % (i - inicio + 1);
-
-            Foto* fotoAux = candidatos[i];
-            candidatos[i] = candidatos[j];
-            candidatos[j] = fotoAux;
-
-            int prioridadAux = prioridades[i];
-            prioridades[i] = prioridades[j];
-            prioridades[j] = prioridadAux;
-
-            std::string rutaAux = rutas[i];
-            rutas[i] = rutas[j];
-            rutas[j] = rutaAux;
+            if (candidatos[j]->getFotoDePerfil() == ruta)
+            {
+                rutaRepetida = true;
+                break;
+            }
         }
 
-        inicio = fin;
-    }
+        if (rutaRepetida)
+        {
+            continue;
+        }
 
-    int mostradas = 0;
-
-    std::cout << "\n=== FOTOS DE TUS AMIGOS ===\n";
-
-    for (int i = 0; i < cantidad && mostradas < 3; i++)
-    {
-        bool repetida = false;
+        bool yaMostrada = false;
 
         for (int j = 0; j < cantidadUltimasFotos; j++)
         {
             MedidorRecursos::registrarIteracion();
 
-            if (rutas[i] == rutasUltimasFotos[j])
+            if (rutasUltimasFotos[j] == ruta)
             {
-                repetida = true;
+                yaMostrada = true;
                 break;
             }
         }
 
-        if (!repetida)
+        if (yaMostrada)
         {
-            std::cout << "\nFoto: " << rutas[i]
-                      << "\nAmigos en comun: "
-                      << prioridades[i] << '\n';
-
-            rutasUltimasFotos[mostradas] = rutas[i];
-            mostradas++;
+            continue;
         }
+
+        int amigosEnComun = contarAmigosEnComun(usuario, amigo);
+        int peso;
+
+        if (amigosEnComun <= 10)
+        {
+            peso = 2;
+        }
+        else if (amigosEnComun <= 20)
+        {
+            peso = 5;
+        }
+        else
+        {
+            peso = 7;
+        }
+
+        candidatos[cantidadCandidatos] = amigo;
+        pesos[cantidadCandidatos] = peso;
+        cantidadCandidatos++;
     }
 
-    cantidadUltimasFotos = mostradas;
-
-    if (mostradas == 0)
+    if (cantidadCandidatos < 3)
     {
-        std::cout << "No hay fotos diferentes para mostrar.\n";
+        std::cout
+            << "No hay suficientes fotos de perfil distintas "
+            << "para mostrar un grupo nuevo de tres.\n";
+
+        delete[] candidatos;
+        delete[] pesos;
+
+        MedidorRecursos::liberarMemoria(
+            sizeof(Usuario*) * cantidadAmigos +
+            sizeof(int) * cantidadAmigos);
+
+        MedidorRecursos::mostrarReporte();
+        return;
     }
+
+    std::string rutasSeleccionadas[3];
+
+    std::cout << "\n=== FOTOS DE PERFIL DE TUS AMIGOS ===\n";
+
+    for (int seleccion = 0; seleccion < 3; seleccion++)
+    {
+        int pesoTotal = 0;
+
+        for (int i = 0; i < cantidadCandidatos; i++)
+        {
+            MedidorRecursos::registrarIteracion();
+            pesoTotal += pesos[i];
+        }
+
+        int numeroAleatorio = std::rand() % pesoTotal;
+        int acumulado = 0;
+        int indiceElegido = 0;
+
+        for (int i = 0; i < cantidadCandidatos; i++)
+        {
+            MedidorRecursos::registrarIteracion();
+            acumulado += pesos[i];
+
+            if (numeroAleatorio < acumulado)
+            {
+                indiceElegido = i;
+                break;
+            }
+        }
+
+        Usuario* elegido = candidatos[indiceElegido];
+
+        rutasSeleccionadas[seleccion] =
+            elegido->getFotoDePerfil();
+
+        std::cout << "\nAmigo: " << elegido->getApodo() << "\n";
+        std::cout << "Foto de perfil: "
+                  << elegido->getFotoDePerfil() << "\n";
+
+        for (int i = indiceElegido; i < cantidadCandidatos - 1; i++)
+        {
+            MedidorRecursos::registrarIteracion();
+            candidatos[i] = candidatos[i + 1];
+            pesos[i] = pesos[i + 1];
+        }
+
+        cantidadCandidatos--;
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        rutasUltimasFotos[i] = rutasSeleccionadas[i];
+    }
+
+    cantidadUltimasFotos = 3;
 
     delete[] candidatos;
-    delete[] prioridades;
-    delete[] rutas;
+    delete[] pesos;
 
     MedidorRecursos::liberarMemoria(
-        maxFotos * (sizeof(Foto*) + sizeof(int) + sizeof(std::string))
-        );
+        sizeof(Usuario*) * cantidadAmigos +
+        sizeof(int) * cantidadAmigos);
 
     MedidorRecursos::mostrarReporte();
+}
 
+
+int RedSocial::getCantidadSolicitudes() const
+{
+    return cantidadSolicitudes;
+}
+
+Solicitud* RedSocial::getSolicitud(int indice) const
+{
+    if (indice < 0 || indice >= cantidadSolicitudes)
+    {
+        return nullptr;
+    }
+
+    return solicitudes[indice];
 }
