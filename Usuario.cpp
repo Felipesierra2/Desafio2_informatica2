@@ -1,5 +1,6 @@
 #include "Usuario.h"
 #include "MedidorRecursos.h"
+#include <new>
 
 /*Constructor que define la estrcutura del usuario, se declara vació por defecto
  */
@@ -86,7 +87,12 @@ bool Usuario::agregarAmigo(Usuario* usuario){
     if (cantidadAmigos == capacidadAmigos) {
         int nuevaCapacidad = (capacidadAmigos == 0) ? 4 : capacidadAmigos * 2;
 
-        Usuario** nuevo = new Usuario*[nuevaCapacidad];
+        Usuario** nuevo = new (std::nothrow) Usuario*[nuevaCapacidad];
+
+        if (nuevo == nullptr) {
+            return false;
+        }
+
         MedidorRecursos::registrarMemoria(nuevaCapacidad * sizeof(Usuario*));
 
         for (int i = 0; i < cantidadAmigos; ++i) {
@@ -142,6 +148,16 @@ int Usuario::getCantidadAmigos() const
     return cantidadAmigos;
 }
 
+Usuario* Usuario::getAmigo(int indice) const
+{
+    if (indice < 0 || indice >= cantidadAmigos)
+    {
+        return nullptr;
+    }
+
+    return amigos[indice];
+}
+
 bool Usuario::agregarMensajeEnviado(Mensajes* mensaje){
     if (mensaje == nullptr)
     {
@@ -153,7 +169,11 @@ bool Usuario::agregarMensajeEnviado(Mensajes* mensaje){
         ? 2
         : capacidadMensajesEnviados * 2;
 
-        Mensajes** nuevosMensajes = new Mensajes*[nuevaCapacidad];
+        Mensajes** nuevosMensajes = new (std::nothrow)Mensajes*[nuevaCapacidad];
+
+        if (nuevosMensajes == nullptr) {
+            return false;
+        }
 
         MedidorRecursos::registrarMemoria(nuevaCapacidad * sizeof(Mensajes*));
 
@@ -190,7 +210,11 @@ bool Usuario::agregarMensajeRecibido(Mensajes* mensaje)
         ? 2
         : capacidadMensajesRecibidos * 2;
 
-        Mensajes** nuevosMensajes = new Mensajes*[nuevaCapacidad];
+        Mensajes** nuevosMensajes = new (std::nothrow)Mensajes*[nuevaCapacidad];
+
+        if (nuevosMensajes == nullptr) {
+            return false;
+        }
 
         MedidorRecursos::registrarMemoria(nuevaCapacidad * sizeof(Mensajes*));
 
@@ -264,11 +288,17 @@ bool Usuario::agregarAlbum(Album* album)
         ? 2
         : capacidadAlbumes * 2;
 
-        Album** nuevosAlbumes = new Album*[nuevaCapacidad];
+        Album** nuevosAlbumes = new (std::nothrow) Album*[nuevaCapacidad];
+
+        if(nuevosAlbumes == nullptr){
+            return false;
+        }
+
         MedidorRecursos::registrarMemoria(nuevaCapacidad * sizeof(Album*));
 
         for (int i = 0; i < cantidadAlbumes; i++)
         {
+            MedidorRecursos::registrarIteracion();
             nuevosAlbumes[i] = albumes[i];
         }
 
@@ -391,6 +421,7 @@ Usuario::~Usuario(){
     for (int i = 0; i < cantidadAlbumes; i++){
         delete albumes[i];
     }
+
     MedidorRecursos::liberarMemoria(capacidadAlbumes * sizeof(Album*));
     delete[] albumes;
 }
@@ -536,7 +567,11 @@ bool Usuario::agregarSolicitud(Solicitud* solicitud)
             nuevaCapacidad = capacidadSolicitudes * 2;
         }
 
-        Solicitud** nuevoArreglo = new Solicitud*[nuevaCapacidad];
+        Solicitud** nuevoArreglo = new (std::nothrow)Solicitud*[nuevaCapacidad];
+
+        if (nuevoArreglo == nullptr) {
+            return false;
+        }
 
         for (int i = 0; i < cantidadSolicitudes; ++i)
         {

@@ -57,6 +57,7 @@ public:
     bool quitarAmigo(Usuario* usuario);
     Solicitud* getSolicitud(int indice) const;
     int getCantidadAmigos() const;
+    Usuario* getAmigo(int indice) const;
 
     bool agregarMensajeEnviado(Mensajes* mensaje);
     bool agregarMensajeRecibido(Mensajes* mensaje);
